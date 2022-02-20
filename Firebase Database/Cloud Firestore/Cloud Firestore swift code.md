@@ -65,6 +65,7 @@ class CardListViewController: UITableViewController {
   var creditCardList: [CreditCard] = []
 
   // Firestore read
+  // addSnapshotListener -> 연결된 주소의 데이터가 바뀔때마다 자동으로 업데이트를 해줌
   db.collection("creditCardList").addSnapshotListener { snapshot, error in
     guard let documents = snapshot?.documents else {
       debugPrint("ERROR Firestore fetching document \(String(describing: error))")
@@ -86,5 +87,48 @@ class CardListViewController: UITableViewController {
         self.tableView.reloadData()
     }
   }
+  
+  override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    let cardID = creditCardList[indexPath.row].id
+    //firebase firestore
+    // key값이 분명 할 경우
+    // updateData : 전체 문서를 덮어쓰지 않고 문서의 일부 필드를 업데이트
+    db.collection("creditCardList").document("card\(cardID)").updateData(["isSelected": true])
+
+    // key값이 분명하지 않을 경우
+    // creditCardList의 id중 cardID와 같은 모든 데이터 반환 후 결과를 가져오는 메소드
+    db.collection("creditCardList").whereField("id", isEqualTo: cardID).getDocuments { snapshot, _ in
+        guard let document = snapshot?.documents.first else {
+            debugPrint("Error Firestore fetching document")
+            return
+        }
+
+        document.reference.updateData(["isSelected": true])
+    }
+  }
+  
+  override func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
+      return true
+  }
+
+  override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+    if editingStyle == .delete {
+      let cardId = creditCardList[indexPath.row].id
+      
+      // firebase firestore
+      // key값이 분명 할 경우
+      // delete : 문서 삭제
+      db.collection("creditCardList").document("card\(cardId)").delete()
+      
+      // key값이 분명하지 않을 경우
+      db.collection("creditCardList").whereField("id", isEqualTo: cardId).getDocuments { snapshot, _ in
+          guard let document = snapshot?.documents.first else {
+              debugPrint("Error Firestore fetching document")
+              return
+          }
+
+        document.reference.delete()
+      }
+   }
 }
 ```
