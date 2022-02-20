@@ -57,7 +57,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 }
 
 // CardListViewController
-
 import UIKit
 import FirebaseFirestore
 
